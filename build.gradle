@@ -1,88 +1,56 @@
 plugins {
-    id 'com.github.johnrengelman.shadow' version "${shadow_version}" apply false
-    id 'com.matthewprenger.cursegradle' version "${cursegradle_version}" apply false
-    id 'com.modrinth.minotaur' version "${minotaur_version}" apply false
-    id 'mod-update' version "${mod_update_version}" apply false
-    id 'fabric-loom' version "${fabric_loom_version}" apply false
-    id 'io.papermc.hangar-publish-plugin' version "${hangar_publish_version}" apply false
-    id 'io.papermc.paperweight.userdev' version "${paperweight_version}" apply false
-    id 'xyz.jpenilla.run-paper' version "${run_task_version}" apply false
+    id 'org.quiltmc.loom' version '1.5.+'
+    id 'maven-publish'
 }
 
-apply from: "https://raw.githubusercontent.com/henkelmax/mod-gradle-scripts/${mod_gradle_script_version}/taskutils.gradle"
+group = 'de.maxhenkel.voicechat'
+archivesBaseName = 'voicechat'
+version = '1.0.0'
 
-tasks.register('01-publishBungeeCord') {
-    group = 'voicechat'
+dependencies {
+    // Quilt Loader + QFAPI
+    modImplementation "org.quiltmc:quilt-loader:0.28.1"
+    modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:11.0.0-alpha.3+0.102.0-1.21"
+
+    // Config/GUI
+    modImplementation "me.shedaniel.cloth:cloth-config-fabric:${cloth_config_version}"
+    implementation "me.shedaniel.configbuilder:config-builder:${configbuilder_version}"
+
+    // Audio libs
+    implementation "com.sedmelluq:concentus:${concentus_version}"
+    implementation "com.discord4j:opus4j:${opus4j_version}"
+    implementation "com.rnnoise4j:rnnoise4j:${rnnoise4j_version}"
+    implementation "com.lame4j:lame4j:${lame4j_version}"
+}
+
+repositories {
+    mavenCentral()
+    maven { url "https://maven.quiltmc.org/repository/release/" }
+    maven { url "https://maven.fabricmc.net/" }
+    maven { url "https://maven.shedaniel.me/" }
+    maven { url "https://jitpack.io" }
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/voicechat.accesswidener")
+}
+
+tasks.register("uploadMod") {
+    group = "publishing"
     doLast {
-        runGradleTasks(['common-proxy:clean', 'bungeecord:clean'], ['bungeecord:modrinth', 'bungeecord:publishAllPublicationsToHangar'])
+        println "Quilt mod built successfully. Add publishing logic here if needed."
     }
 }
 
-tasks.register('02-publishVelocity') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common-proxy:clean', 'velocity:clean'], ['velocity:modrinth', 'velocity:publishAllPublicationsToHangar'])
-    }
+java {
+    withSourcesJar()
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17)) // Or use 21 if needed
 }
 
-tasks.register('03-publishBukkit') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['bukkit:clean'], ['bukkit:curseforge', 'bukkit:modrinth', 'bukkit:publishAllPublicationsToHangar'])
-    }
-}
-
-tasks.register('04-publishPaper') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common:clean'], ['paper:modrinth', 'paper:publishAllPublicationsToHangar'])
-    }
-}
-
-tasks.register('05-publishQuilt', GradleBuild) {
-    group = 'voicechat'
-    dir = 'quilt'
-    tasks = ['uploadMod']
-}
-
-tasks.register('06-publishForge') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common:clean', 'common-client:clean', 'forge:clean'], ['forge:curseforge', 'forge:modrinth', 'forge:modUpdate'])
-    }
-}
-
-tasks.register('07-publishNeoForge') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common:clean', 'common-client:clean', 'neoforge:clean'], ['neoforge:curseforge', 'neoforge:modrinth', 'neoforge:modUpdate'])
-    }
-}
-
-tasks.register('08-publishFabric') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common:clean', 'common-client:clean', 'fabric:clean'], ['fabric:curseforge', 'fabric:modrinth', 'fabric:modUpdate'])
-    }
-}
-
-tasks.register('publishFabricSnapshot') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['common:clean', 'common-client:clean', 'fabric:clean'], ['fabric:curseforge', 'fabric:modrinth'])
-    }
-}
-
-tasks.register('publishApi') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['api:clean', 'api:publish'], [])
-    }
-}
-
-tasks.register('publishApiLocal') {
-    group = 'voicechat'
-    doLast {
-        runGradleTasks(['api:clean', 'api:publishToMavenLocal'], [])
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
     }
 }
